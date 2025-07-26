@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 const originalSugars = [
@@ -33,18 +33,42 @@ export default function RoomTwo() {
   const [message, setMessage] = useState("");
   const [mixStatus, setMixStatus] = useState("idle"); // idle, mixing, boom
   const [isDragOver, setIsDragOver] = useState(false);
-  const mixingBottleRef = useRef(null);
 
   useEffect(() => {
     setSugars(shuffleArray(originalSugars));
   }, []);
 
-  const currentTargetIndex = results.length; // 0 means must find Lactose, etc.
+  const currentTargetIndex = results.length; // index for current target
   const currentTarget = targets[currentTargetIndex];
+  const isComplete = results.length === targets.length;
 
-  // Desktop drag handlers
+  // Custom drag preview for mobile & desktop
   const handleDragStart = (e, sugarName) => {
     e.dataTransfer.setData("text/plain", sugarName);
+
+    // Create a small custom drag preview element
+    const dragPreview = document.createElement("div");
+    dragPreview.style.position = "absolute";
+    dragPreview.style.top = "-1000px"; // hide off-screen
+    dragPreview.style.padding = "8px 12px";
+    dragPreview.style.background = "#ddd";
+    dragPreview.style.borderRadius = "8px";
+    dragPreview.style.fontSize = "20px";
+    dragPreview.style.fontWeight = "600";
+    dragPreview.style.color = "#333";
+    dragPreview.innerText = sugarName;
+
+    document.body.appendChild(dragPreview);
+    e.dataTransfer.setDragImage(
+      dragPreview,
+      dragPreview.offsetWidth / 2,
+      dragPreview.offsetHeight / 2
+    );
+
+    // Remove after a tick to avoid memory leaks
+    setTimeout(() => {
+      document.body.removeChild(dragPreview);
+    }, 0);
   };
 
   const handleDrop = (e) => {
@@ -67,46 +91,6 @@ export default function RoomTwo() {
     setIsDragOver(false);
   };
 
-  // Mobile touch drag support
-
-  // Track dragging sugar name and current position
-  const dragData = useRef({ sugarName: null, dragging: false });
-
-  // When user touches sugar card
-  const handleTouchStart = (e, sugarName) => {
-    dragData.current = { sugarName, dragging: true };
-  };
-
-  // When user moves finger
-  const handleTouchMove = (e) => {
-    if (!dragData.current.dragging) return;
-    e.preventDefault(); // prevent scrolling while dragging
-  };
-
-  // When user lifts finger: check if it's over the mixing bottle
-  const handleTouchEnd = (e) => {
-    if (!dragData.current.dragging) return;
-    dragData.current.dragging = false;
-
-    const touch = e.changedTouches[0];
-    const mixingRect = mixingBottleRef.current?.getBoundingClientRect();
-
-    if (
-      mixingRect &&
-      touch.clientX >= mixingRect.left &&
-      touch.clientX <= mixingRect.right &&
-      touch.clientY >= mixingRect.top &&
-      touch.clientY <= mixingRect.bottom
-    ) {
-      // Drop sugar into mixing bottle if less than 2 selected
-      if (dragData.current.sugarName && selected.length < 2) {
-        setSelected((prev) => [...prev, dragData.current.sugarName]);
-        setMessage("");
-      }
-    }
-    dragData.current.sugarName = null;
-  };
-
   const handleMix = () => {
     if (selected.length === 2) {
       setMixStatus("mixing");
@@ -120,7 +104,6 @@ export default function RoomTwo() {
         ) {
           setResults([...results, currentTarget.name]);
           setMessage(`✅ Created ${currentTarget.name} ${currentTarget.emoji}`);
-
           setMixStatus("idle");
         } else {
           setMessage(
@@ -134,7 +117,12 @@ export default function RoomTwo() {
     }
   };
 
-  const isComplete = results.length === targets.length;
+  const tapSelect = (sugarName) => {
+    if (selected.length < 2) {
+      setSelected((prev) => [...prev, sugarName]);
+      setMessage("");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 flex flex-col items-center">
@@ -149,9 +137,9 @@ export default function RoomTwo() {
       </div>
 
       <p className="text-lg text-indigo-700 mb-6 text-center max-w-2xl">
-        Drag and combine sugar molecules into the beaker to form{" "}
-        <strong>{currentTarget.name}</strong> first! Match all targets in order to
-        unlock the next room.
+        Drag or tap sugar molecules into the beaker to form{" "}
+        <strong>{currentTarget?.name}</strong> first! Match all targets in order
+        to unlock the next room.
       </p>
 
       <div className="flex flex-col md:flex-row w-full max-w-6xl gap-10">
@@ -166,16 +154,8 @@ export default function RoomTwo() {
                 key={name}
                 draggable
                 onDragStart={(e) => handleDragStart(e, name)}
-                onTouchStart={(e) => handleTouchStart(e, name)}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={handleTouchEnd}
-                onClick={() => {
-                  if (selected.length < 2) {
-                    setSelected((prev) => [...prev, name]);
-                    setMessage("");
-                  }
-                }}
-                className="cursor-move rounded-xl shadow-md p-5 flex flex-col items-center justify-center transition transform hover:scale-105 hover:shadow-lg bg-indigo-100 border-2 border-indigo-300"
+                onClick={() => tapSelect(name)}
+                className="cursor-pointer rounded-xl shadow-md p-5 flex flex-col items-center justify-center transition transform hover:scale-105 hover:shadow-lg bg-indigo-100 border-2 border-indigo-300"
               >
                 <span className="text-5xl mb-3 select-none">{icon}</span>
                 <span className="text-indigo-900 font-semibold text-lg select-none">
@@ -188,7 +168,6 @@ export default function RoomTwo() {
 
         {/* Middle: Mixing Bottle */}
         <div
-          ref={mixingBottleRef}
           className={`flex-1 bg-indigo-100 shadow-inner rounded-2xl flex flex-col items-center justify-center px-4 py-8 transition-colors duration-300 ${
             isDragOver ? "bg-indigo-200 border-4 border-indigo-600" : ""
           }`}
@@ -235,15 +214,15 @@ export default function RoomTwo() {
             ➕ Mix Sugars
           </button>
           {message && (
-            <p className="mt-4 text-indigo-900 font-medium select-none">{message}</p>
+            <p className="mt-4 text-indigo-900 font-medium select-none text-center max-w-xs">
+              {message}
+            </p>
           )}
         </div>
 
         {/* Right Side: Target Results */}
         <div className="flex-1 bg-white shadow rounded-2xl p-6">
-          <h2 className="text-xl font-semibold text-indigo-700 mb-6">
-            🧩 Target Results
-          </h2>
+          <h2 className="text-xl font-semibold text-indigo-700 mb-6">🧩 Target Results</h2>
           <ul className="space-y-4">
             {targets.map(({ name, emoji }, index) => (
               <li
