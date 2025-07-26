@@ -79,7 +79,7 @@ const Desserts = () => {
         <div className="flex-1 relative w-full max-w-sm">
           {/* Visual: Sucrose molecular structure */}
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/Sucrose_chemical_structure.svg/220px-Sucrose_chemical_structure.svg.png"
+            src="https://media.geeksforgeeks.org/wp-content/uploads/20231022121359/sucrose-660.jpg"
             alt="Sucrose molecule structure"
             className="rounded-lg shadow-md border border-yellow-300"
           />

@@ -78,7 +78,7 @@ const MainCourses = () => {
 
         <div className="flex-1 relative w-full max-w-sm">
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Amylose-3D-skeletal.png/220px-Amylose-3D-skeletal.png"
+            src="https://upload.wikimedia.org/wikipedia/commons/b/b5/Amylose.png"
             alt="Amylose molecular structure"
             className="rounded-lg shadow-md border border-yellow-300"
           />

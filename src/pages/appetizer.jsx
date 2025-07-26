@@ -79,7 +79,7 @@ const Appetizer = () => {
         <div className="flex-1 relative w-full max-w-sm">
           {/* Visual representation of molecules */}
           <img
-            src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Glucose-2D-skeletal.png/220px-Glucose-2D-skeletal.png"
+            src="https://upload.wikimedia.org/wikipedia/commons/e/e9/Glucose-2D-skeletal.png"
             alt="Glucose molecule structure"
             className="rounded-lg shadow-md border border-yellow-300"
           />

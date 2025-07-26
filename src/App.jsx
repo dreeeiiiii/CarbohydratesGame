@@ -8,6 +8,7 @@ import RoomThree from './pages/roomThree'
 import Appetizer from './pages/appetizer'
 import Desserts from './pages/desserts'
 import MainCourse from './pages/mainCourses'
+import LastRoom from './pages/lastRoom'
 
 
 
@@ -77,6 +78,7 @@ function App() {
       <Route path="/roomOne" element={<RoomOne />} />
       <Route path="/roomTwo" element={<RoomTwo />} />
       <Route path="/roomThree" element={<RoomThree />} />
+      <Route path="/lastRoom" element={<LastRoom />} />
     </Routes>
 
   )
