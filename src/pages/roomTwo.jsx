@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 const originalSugars = [
@@ -33,6 +33,7 @@ export default function RoomTwo() {
   const [message, setMessage] = useState("");
   const [mixStatus, setMixStatus] = useState("idle"); // idle, mixing, boom
   const [isDragOver, setIsDragOver] = useState(false);
+  const mixingBottleRef = useRef(null);
 
   useEffect(() => {
     setSugars(shuffleArray(originalSugars));
@@ -41,6 +42,7 @@ export default function RoomTwo() {
   const currentTargetIndex = results.length; // 0 means must find Lactose, etc.
   const currentTarget = targets[currentTargetIndex];
 
+  // Desktop drag handlers
   const handleDragStart = (e, sugarName) => {
     e.dataTransfer.setData("text/plain", sugarName);
   };
@@ -63,6 +65,46 @@ export default function RoomTwo() {
   const handleDragLeave = (e) => {
     e.preventDefault();
     setIsDragOver(false);
+  };
+
+  // Mobile touch drag support
+
+  // Track dragging sugar name and current position
+  const dragData = useRef({ sugarName: null, dragging: false });
+
+  // When user touches sugar card
+  const handleTouchStart = (e, sugarName) => {
+    dragData.current = { sugarName, dragging: true };
+  };
+
+  // When user moves finger
+  const handleTouchMove = (e) => {
+    if (!dragData.current.dragging) return;
+    e.preventDefault(); // prevent scrolling while dragging
+  };
+
+  // When user lifts finger: check if it's over the mixing bottle
+  const handleTouchEnd = (e) => {
+    if (!dragData.current.dragging) return;
+    dragData.current.dragging = false;
+
+    const touch = e.changedTouches[0];
+    const mixingRect = mixingBottleRef.current?.getBoundingClientRect();
+
+    if (
+      mixingRect &&
+      touch.clientX >= mixingRect.left &&
+      touch.clientX <= mixingRect.right &&
+      touch.clientY >= mixingRect.top &&
+      touch.clientY <= mixingRect.bottom
+    ) {
+      // Drop sugar into mixing bottle if less than 2 selected
+      if (dragData.current.sugarName && selected.length < 2) {
+        setSelected((prev) => [...prev, dragData.current.sugarName]);
+        setMessage("");
+      }
+    }
+    dragData.current.sugarName = null;
   };
 
   const handleMix = () => {
@@ -124,6 +166,15 @@ export default function RoomTwo() {
                 key={name}
                 draggable
                 onDragStart={(e) => handleDragStart(e, name)}
+                onTouchStart={(e) => handleTouchStart(e, name)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={() => {
+                  if (selected.length < 2) {
+                    setSelected((prev) => [...prev, name]);
+                    setMessage("");
+                  }
+                }}
                 className="cursor-move rounded-xl shadow-md p-5 flex flex-col items-center justify-center transition transform hover:scale-105 hover:shadow-lg bg-indigo-100 border-2 border-indigo-300"
               >
                 <span className="text-5xl mb-3 select-none">{icon}</span>
@@ -137,6 +188,7 @@ export default function RoomTwo() {
 
         {/* Middle: Mixing Bottle */}
         <div
+          ref={mixingBottleRef}
           className={`flex-1 bg-indigo-100 shadow-inner rounded-2xl flex flex-col items-center justify-center px-4 py-8 transition-colors duration-300 ${
             isDragOver ? "bg-indigo-200 border-4 border-indigo-600" : ""
           }`}

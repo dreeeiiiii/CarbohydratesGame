@@ -49,13 +49,18 @@ const hints = [
 ];
 
 export default function RoomThree() {
-  const navigate = useNavigate(); // ✅ Moved inside the component
+  const navigate = useNavigate();
 
   const [cards, setCards] = useState([]);
   const [dropped, setDropped] = useState([null, null, null]);
   const [error, setError] = useState("");
   const [showHint, setShowHint] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // For visual drag preview on mobile:
+  const [draggingCard, setDraggingCard] = useState(null);
+  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const containerRef = useRef(null);
 
   const dropRefs = [useRef(null), useRef(null), useRef(null)];
 
@@ -91,6 +96,7 @@ export default function RoomThree() {
   };
 
   const handleDragEnd = (event, info, func) => {
+    setDraggingCard(null);
     const { point } = info;
     const dropIndex = dropRefs.findIndex((ref) => {
       if (!ref.current) return false;
@@ -142,10 +148,52 @@ export default function RoomThree() {
     }
   };
 
+  // Mobile touch drag handlers for visual preview:
+  const handleTouchStart = (e, func) => {
+    setDraggingCard(func);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!draggingCard) return;
+    const touch = e.touches[0];
+    setDragPosition({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!draggingCard) return;
+
+    const touch = e.changedTouches[0];
+    // Check drop zone hit
+    const dropIndex = dropRefs.findIndex((ref) => {
+      if (!ref.current) return false;
+      const rect = ref.current.getBoundingClientRect();
+      return (
+        touch.clientX >= rect.left &&
+        touch.clientX <= rect.right &&
+        touch.clientY >= rect.top &&
+        touch.clientY <= rect.bottom
+      );
+    });
+
+    if (dropIndex !== -1) {
+      if (dropped[dropIndex]) {
+        setError("That slot is already filled!");
+      } else {
+        const newDropped = [...dropped];
+        newDropped[dropIndex] = draggingCard;
+        setDropped(newDropped);
+        setError("");
+      }
+    }
+
+    setDraggingCard(null);
+  };
+
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 p-4 font-sans flex flex-col items-center"
+      className="min-h-screen bg-gradient-to-br from-yellow-50 to-orange-100 p-4 font-sans flex flex-col items-center relative"
       style={{ maxHeight: "100vh", overflow: "hidden" }}
+      ref={containerRef}
     >
       <header className="flex justify-between items-center w-full max-w-lg mb-2 px-2">
         <h1 className="text-xl font-bold text-orange-700">🧩 Match the Food Functions</h1>
@@ -200,6 +248,11 @@ export default function RoomThree() {
             dragMomentum={false}
             dragElastic={0}
             onDragEnd={(e, info) => handleDragEnd(e, info, func)}
+
+            // Mobile touch drag preview handlers:
+            onTouchStart={(e) => handleTouchStart(e, func)}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             <div className="text-lg">{getIcon(func)}</div>
             <div className="text-xs font-medium text-gray-800">{func}</div>
@@ -258,6 +311,32 @@ export default function RoomThree() {
         >
           🚪 Go to Final Room
         </button>
+      )}
+
+      {/* Visual Drag Preview for Mobile */}
+      {draggingCard && (
+        <div
+          style={{
+            position: "fixed",
+            top: dragPosition.y - 30,
+            left: dragPosition.x - 60,
+            pointerEvents: "none",
+            zIndex: 1000,
+            width: 120,
+            padding: "8px 10px",
+            backgroundColor: "rgba(255, 235, 59, 0.9)", // yellow
+            borderRadius: 12,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+            display: "flex",
+            alignItems: "center",
+            fontSize: "12px",
+            fontWeight: "600",
+            userSelect: "none",
+          }}
+        >
+          <span style={{ marginRight: 6 }}>{getIcon(draggingCard)}</span>
+          {draggingCard}
+        </div>
       )}
     </div>
   );
